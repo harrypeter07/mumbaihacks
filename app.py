@@ -315,17 +315,32 @@ with tab2:
     
     st.plotly_chart(fig_network, width='stretch', config={'displayModeBar': False})
     
-    # Super spreaders table
+    # Super spreaders table (using filtered graph)
     st.markdown("#### 🔴 Top Super Spreaders")
     
     spreader_data = pd.DataFrame({
-        'User ID': list(G.nodes()),
-        'Connections': [G.degree(node) for node in G.nodes()],
-        'Centrality': [f"{degree_centrality[node]:.3f}" for node in G.nodes()],
-        'Risk Level': ['🔴 High' if G.degree(node) > 3 else '🟡 Medium' if G.degree(node) > 1 else '🟢 Low' for node in G.nodes()]
+        'User ID': list(G_filtered.nodes()),
+        'Connections': [G_filtered.degree(node) for node in G_filtered.nodes()],
+        'Centrality': [f"{degree_centrality[node]:.3f}" for node in G_filtered.nodes()],
+        'Risk Level': ['🔴 High' if G_filtered.degree(node) > 3 else '🟡 Medium' if G_filtered.degree(node) > 1 else '🟢 Low' for node in G_filtered.nodes()]
     }).sort_values('Connections', ascending=False).head(10)
     
     st.dataframe(spreader_data, width='stretch', hide_index=True)
+    
+    # Network statistics
+    st.markdown("#### 📊 Network Statistics")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Nodes", len(G_filtered.nodes()))
+    with col2:
+        st.metric("Total Edges", len(G_filtered.edges()))
+    with col3:
+        avg_degree = sum(dict(G_filtered.degree()).values()) / len(G_filtered.nodes()) if G_filtered.nodes() else 0
+        st.metric("Avg Connections", f"{avg_degree:.1f}")
+    with col4:
+        density = nx.density(G_filtered)
+        st.metric("Network Density", f"{density:.3f}")
 
 with tab3:
     st.subheader("📋 Misinformation Posts Database")
