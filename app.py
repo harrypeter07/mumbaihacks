@@ -253,31 +253,35 @@ with tab2:
                 )
                 edge_traces.append(edge_trace)
     
-    # Node trace
+    # Node trace (using filtered graph)
     node_x = []
     node_y = []
     node_text = []
     node_size = []
     node_color = []
+    node_labels = []
     
-    for node in G.nodes():
-        x, y = pos[node]
-        node_x.append(x)
-        node_y.append(y)
-        degree = G.degree(node)
-        centrality = degree_centrality[node]
-        node_text.append(f"<b>{node}</b><br>Connections: {degree}<br>Centrality: {centrality:.3f}")
-        node_size.append(degree * 8 + 15)
-        node_color.append(degree)
+    for node in G_filtered.nodes():
+        if node in pos_filtered:
+            x, y = pos_filtered[node]
+            node_x.append(x)
+            node_y.append(y)
+            degree = G_filtered.degree(node)
+            centrality = degree_centrality[node]
+            node_text.append(f"<b>{node}</b><br>Connections: {degree}<br>Centrality: {centrality:.3f}")
+            # Improved node sizing - less aggressive scaling
+            node_size.append(max(15, min(50, degree * 3 + 20)))
+            node_color.append(degree)
+            node_labels.append(node.replace('user_', 'U'))
     
     node_trace = go.Scatter(
         x=node_x, y=node_y,
         mode='markers+text',
         hovertemplate='%{hovertext}<extra></extra>',
         hovertext=node_text,
-        text=[node.replace('user_', 'U') for node in G.nodes()],
-        textposition="top center",
-        textfont=dict(size=10, color='#333'),
+        text=node_labels,
+        textposition="middle center",
+        textfont=dict(size=8, color='white', family="Arial Black"),
         marker=dict(
             showscale=True,
             colorscale='YlOrRd',
