@@ -207,30 +207,51 @@ with tab2:
     # Calculate node metrics
     degree_centrality = nx.degree_centrality(G)
     
-    # Layout
-    pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42)
+    # Improved layout with better spacing and multiple algorithms
+    st.markdown("#### 🎛️ Network Controls")
+    layout_type = st.selectbox("Layout Algorithm", ["Spring (Recommended)", "Circular", "Random", "Kamada-Kawai"], key="layout_select")
     
-    # Edge trace with variable thickness
+    if layout_type == "Spring (Recommended)":
+        pos = nx.spring_layout(G, k=3.0, iterations=100, seed=42)  # Increased k for better spacing
+    elif layout_type == "Circular":
+        pos = nx.circular_layout(G)
+    elif layout_type == "Random":
+        pos = nx.random_layout(G, seed=42)
+    else:  # Kamada-Kawai
+        pos = nx.kamada_kawai_layout(G)
+    
+    # Filter for better visualization
+    min_connections = st.slider("Minimum Connections to Show", 1, 10, 2, key="min_conn")
+    filtered_nodes = [node for node in G.nodes() if G.degree(node) >= min_connections]
+    G_filtered = G.subgraph(filtered_nodes)
+    pos_filtered = {node: pos[node] for node in filtered_nodes if node in pos}
+    
+    # Edge trace with variable thickness (using filtered graph)
     edge_traces = []
-    max_weight = max([edge[2]['weight'] for edge in G.edges(data=True)]) if G.edges() else 1
-    
-    for edge in G.edges(data=True):
-        x0, y0 = pos[edge[0]]
-        x1, y1 = pos[edge[1]]
-        weight = edge[2]['weight']
+    if G_filtered.edges():
+        max_weight = max([edge[2]['weight'] for edge in G_filtered.edges(data=True)])
         
-        # Calculate line width based on weight (1-8px range)
-        line_width = max(1, min(8, weight / max_weight * 8))
-        
-        edge_trace = go.Scatter(
-            x=[x0, x1, None], 
-            y=[y0, y1, None],
-            line=dict(width=line_width, color='#888'),
-            hoverinfo='none',
-            mode='lines',
-            showlegend=False
-        )
-        edge_traces.append(edge_trace)
+        for edge in G_filtered.edges(data=True):
+            if edge[0] in pos_filtered and edge[1] in pos_filtered:
+                x0, y0 = pos_filtered[edge[0]]
+                x1, y1 = pos_filtered[edge[1]]
+                weight = edge[2]['weight']
+                
+                # Calculate line width based on weight (1-6px range for cleaner look)
+                line_width = max(0.5, min(6, weight / max_weight * 6))
+                
+                # Use opacity to reduce visual clutter
+                opacity = max(0.3, min(0.8, weight / max_weight))
+                
+                edge_trace = go.Scatter(
+                    x=[x0, x1, None], 
+                    y=[y0, y1, None],
+                    line=dict(width=line_width, color=f'rgba(136, 136, 136, {opacity})'),
+                    hoverinfo='none',
+                    mode='lines',
+                    showlegend=False
+                )
+                edge_traces.append(edge_trace)
     
     # Node trace
     node_x = []
